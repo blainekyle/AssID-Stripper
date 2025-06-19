@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV AssID Stripper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@tailwindcss/browser@latest"></script>
+    <style>
+        /* Custom styles for the message box */
+        #message-box {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+        #message-box.show {
+            display: block;
+        }
+        #message-box.error {
+            background-color: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #dc2626;
+        }
+        #message-box.success {
+            background-color: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #16a34a;
+        }
+
+        body {
+            /* Organic Fluid Background */
+            background-image:
+                radial-gradient(circle at center, #f0f4c3 0%, #d4ed9a 30%, #a7d168 60%, #006934 85%, #004d21 100%);
+            background-size: 200% 200%;
+            animation: fluidAnimation 25s ease-in-out infinite;
+        }
+
+        @keyframes fluidAnimation {
+            0% {
+                background-position: 0% 0%;
+            }
+            50% {
+                background-position: 100% 100%;
+            }
+            100% {
+                background-position: 0% 0%;
+            }
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(12px);
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .heading-text {
+            color: #004225;
+            margin-bottom: 1.5rem;
+        }
+
+        .subheading-text {
+            color: #00509e;
+            margin-bottom: 2rem;
+        }
+
+        .process-button {
+            background-color: #007A33;
+            color: white;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            border-radius: 0.75rem;
+            box-shadow: 0 3px 7px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-left: 2rem;
+            padding-right: 2rem;
+            padding-top: 0.85rem;
+            padding-bottom: 0.85rem;
+            width: 100%;
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 2rem; /* Add margin below the button */
+        }
+
+        .process-button:hover {
+            background-color: #004d21;
+            transform: translateY(-3px) scale(1.03);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.25);
+        }
+
+        .process-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .file-input {
+            position: relative;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .file-input-label {
+            position: absolute;
+            top: 50%;
+            left: 1rem;
+            transform: translateY(-50%);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            border: 2px solid #007A33;
+            background-color: #e8f5e9;
+            color: #007A33;
+            font-weight: 600;
+            text-align: center;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: calc(100% - 2rem); /* Adjusted max-width */
+            box-sizing: border-box;
+            font-size: 1.1rem;
+        }
+
+        .file-input-label:hover {
+            background-color: #f1f7ed;
+            border-color: #006934;
+        }
+
+        .file-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 122, 51, 0.3);
+        }
+
+        #file-status-bar {
+            background-color: #f8fafc; /* Light background */
+            border: 1px solid #e2e8f0; /* Light border */
+            border-radius: 0.75rem; /* Rounded corners */
+            padding: 0.75rem 1rem;
+            margin-top: 2.5rem; /* Increased margin-top to move it down */
+            text-align: left;
+            font-size: 1rem;
+            color: #334155; /* Darker text */
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06); /* Subtle inset shadow */
+            word-wrap: break-word; /* handle long file names */
+            min-height: 2.75rem; /* Ensure it has some minimum height */
+            display: flex;
+            align-items: center; /* Vertically center the text */
+        }
+
+        .download-link {
+            color: #FFB81C;
+            font-weight: 700;
+            text-decoration: underline;
+            transition: color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .download-link:hover {
+            color: #FF9800;
+        }
+
+        #message-box {
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+        }
+
+    </style>
+</head>
+<body class="font-inter">
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="container w-full max-w-md">
+            <div>
+                <h2 class="mt-6 text-center text-3xl font-semibold heading-text">
+                    CSV AssID Stripper
+                </h2>
+                <p class="mt-2 text-center text-lg subheading-text">
+                    Upload a CSV file to process
+                </p>
+            </div>
+            <div class="space-y-6">
+                <div class="file-input-wrapper">
+                    <input
+                        type="file"
+                        id="csv-file-input"
+                        accept=".csv"
+                        class="file-input"
+                    />
+                    <label for="csv-file-input" class="file-input-label">Choose File</label>
+                </div>
+                <button
+                    id="process-csv-button"
+                    class="process-button"
+                    disabled
+                >
+                    <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7l-4-4H6zM6 4h7v4L17 11v5a2 2 0 01-2 2H5a2 0 01-2-2v-1.5L4.5 8H6v6z" clip-rule="evenodd" />
+                    </svg>
+                    Process CSV
+                </button>
+                <div id="download-link-container" class="text-center mt-6" style="display: none;">
+                    <a
+                        id="download-link"
+                        href="#"
+                        download="processed_file.csv"
+                        class="download-link"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+                            <path fill-rule="evenodd" d="M6.293 9.293a1 1 0 011.414 0L10 11.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            <path d="M3 17.25a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75z" />
+                        </svg>
+                        Download Processed CSV
+                    </a>
+                </div>
+            </div>
+            <div id="file-status-bar">No file chosen</div>
+            <div id="message-box" class="hidden"></div>
+        </div>
+    </div>
+
+    <script>
+    const fileInput = document.getElementById('csv-file-input');
+    const processButton = document.getElementById('process-csv-button');
+    const downloadLinkContainer = document.getElementById('download-link-container');
+    const downloadLink = document.getElementById('download-link');
+    const messageBox = document.getElementById('message-box');
+    const fileStatusBar = document.getElementById('file-status-bar');
+
+
+    function showMessage(message, type = 'success') {
+        messageBox.textContent = message;
+        messageBox.className = `fixed top-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded shadow-md text-${type === 'success' ? 'green' : 'red'}-700 bg-${type === 'success' ? 'green' : 'red'}-100 border border-${type === 'success' ? 'green' : 'red'}-400`;
+        messageBox.classList.add('show');
+        setTimeout(() => {
+            messageBox.classList.remove('show');
+        }, 5000);
+    }
+
+    fileInput.addEventListener('change', () => {
+        processButton.disabled = !fileInput.files.length;
+        processButton.classList.toggle('opacity-50', !fileInput.files.length);
+        processButton.classList.toggle('cursor-not-allowed', !fileInput.files.length);
+
+        if (fileInput.files.length > 0) {
+            fileStatusBar.textContent = fileInput.files[0].name;
+        } else {
+            fileStatusBar.textContent = 'No file chosen';
+        }
+    });
+
+    processButton.addEventListener('click', () => {
+        const file = fileInput.files[0];
+        if (!file) {
+            showMessage('Please select a CSV file.', 'error');
+            return;
+        }
+
+        if (file.type !== 'text/csv' && file.type !== 'application/vnd.ms-excel') {
+            showMessage('Invalid file type. Please upload a CSV file.', 'error');
+            return;
+        }
+
+        processButton.disabled = true;
+        processButton.textContent = 'Processing...';
+        processButton.innerHTML = `
+            <svg class="animate-spin h-5 w-5 mr-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Processing...
+        `;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const csvText = event.target.result;
+                const lines = csvText.split('\n');
+                const header = lines[0].split(',');
+                const processedHeader = header.map(cell => {
+                    const trimmedCell = cell.trim();
+                    if (trimmedCell.match(/ \(\d{7}\)$/)) {
+                        return trimmedCell.slice(0, -10);
+                    }
+                    return trimmedCell;
+                }).join(',');
+
+                const processedCsv = [processedHeader, ...lines.slice(1)].join('\n');
+
+                const blob = new Blob([processedCsv], { type: 'text/csv;charset=utf-8;' });
+                const originalFileName = file.name.replace(/\.[^/.]+$/, "");  // Remove extension
+                const newFileName = `${originalFileName}_AssIDStripped.csv`;
+                const url = URL.createObjectURL(blob);
+                downloadLink.href = url;
+                downloadLink.download = newFileName; // set the download file name
+                downloadLinkContainer.style.display = 'block';
+                showMessage('CSV file processed successfully!', 'success');
+
+            } catch (error) {
+                showMessage(`Error processing CSV file: ${error.message}`, 'error');
+                console.error("Error during processing:", error);
+            } finally {
+                processButton.disabled = false;
+                processButton.textContent = 'Process CSV';
+                processButton.innerHTML = `
+                    <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 0 002-2V7l-4-4H6zM6 4h7v4L17 11v5a2 2 0 01-2 2H5a2 0 01-2-2v-1.5L4.5 8H6v6z" clip-rule="evenodd" />
+                    </svg>
+                    Process CSV
+                `;
+            }
+        };
+
+        reader.onerror = () => {
+            showMessage('Error reading file. Please try again.', 'error');
+            processButton.disabled = false;
+            processButton.textContent = 'Process CSV';
+             processButton.innerHTML = `
+                    <svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 0 002-2V7l-4-4H6zM6 4h7v4L17 11v5a2 0 01-2 2H5a2 0 01-2-2v-1.5L4.5 8H6v6z" clip-rule="evenodd" />
+                    </svg>
+                    Process CSV
+                `;
+        };
+        reader.readAsText(file);
+    });
+    </script>
+</body>
+</html>
